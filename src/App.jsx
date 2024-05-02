@@ -17,6 +17,7 @@ function App() {
       <GlobalStyle />
       <Routes>
         <Route path="/" element={<Document />} />
+        <Route path="/users" element={<Document />} />
         {/* <Document /> */}
       </Routes>
     </>

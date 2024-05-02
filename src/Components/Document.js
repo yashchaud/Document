@@ -11,6 +11,7 @@ import NavComponent from "./ReuseableComponents.js/Nav";
 // import Link from "next/link";
 import FOlderdiv from "./ReuseableComponents.js/Folderdiv";
 import { Link } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { Badge } from "@com/ui/badge";
 import {
   CardTitle,
@@ -19,6 +20,7 @@ import {
   CardContent,
   Card,
 } from "@com/ui/card";
+import Userlist from "./ReuseableComponents.js/Userlist";
 import { SheetTrigger, SheetContent, Sheet } from "@com/ui/sheet";
 import {
   DropdownMenuTrigger,
@@ -30,6 +32,8 @@ import {
 } from "@com/ui/dropdown-menu";
 
 const Document = () => {
+  let location = useLocation();
+
   const [Documents, SetDocuments] = useState([
     { name: "Legal Documents", id: 1 },
     { name: "Registration", id: 2 },
@@ -87,7 +91,7 @@ const Document = () => {
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     className="flex items-center gap-2 text-lg font-semibold"
-                    href="#"
+                    to="/"
                   >
                     <Package2Icon className="h-6 w-6" />
                     <span className="sr-only">Acme Inc</span>
@@ -95,7 +99,7 @@ const Document = () => {
 
                   <Link
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                    href="#"
+                    to="/"
                   >
                     <ShoppingCartIcon className="h-5 w-5" />
                     Documents
@@ -103,39 +107,31 @@ const Document = () => {
 
                   <Link
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                    href="#"
+                    to="users"
                   >
                     <UsersIcon className="h-5 w-5" />
                     Users
                   </Link>
                 </nav>
-                <div className="mt-auto">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Upgrade to Pro</CardTitle>
-                      <CardDescription>
-                        Unlock all features and get unlimited access to our
-                        support team.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <Button className="w-full" size="sm">
-                        Upgrade
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </div>
               </SheetContent>
             </Sheet>
             <div className="w-full flex-1">
               <form>
                 <div className="relative">
                   <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                    placeholder="Search products..."
-                    type="search"
-                  />
+                  {open ? (
+                    <Input
+                      className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                      placeholder="Search Documents..."
+                      type="search"
+                    />
+                  ) : (
+                    <Input
+                      className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                      placeholder="Search Folders..."
+                      type="search"
+                    />
+                  )}
                 </div>
               </form>
             </div>
@@ -160,7 +156,9 @@ const Document = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          {open ? (
+          {location.pathname === "/users" ? (
+            <Userlist />
+          ) : open ? (
             <PDFdiv setOpen={setOpen} />
           ) : (
             <FOlderdiv setOpen={setOpen} />
