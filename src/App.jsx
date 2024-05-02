@@ -2,12 +2,23 @@ import { useState } from "react";
 import styled from "styled-components";
 import GlobalStyle from "./Globalstyles";
 import Document from "./Components/Document";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Outlet,
+  useLocation,
+  Link,
+} from "react-router-dom";
 
 function App() {
   return (
     <>
       <GlobalStyle />
-      <Document />
+      <Routes>
+        <Route path="/" element={<Document />} />
+        {/* <Document /> */}
+      </Routes>
     </>
   );
 }
