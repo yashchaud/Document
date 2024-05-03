@@ -4,6 +4,7 @@ import { AvatarImage, AvatarFallback, Avatar } from "@com/ui/avatar";
 import { Badge } from "@com/ui/badge";
 import { Card } from "@com/ui/card";
 import { Input } from "@com/ui/input";
+import Createuser from "../Popup";
 import {
   TableHead,
   TableRow,
@@ -12,8 +13,14 @@ import {
   TableBody,
   Table,
 } from "@com/ui/table";
+import { useSelector } from "react-redux";
+import Cookies from "js-cookie";
 
 const Userlist = () => {
+  const { userlist } = useSelector((state) => state.counterSlice);
+  const User = Cookies.get("user"); // Make sure to use get method correctly
+  const userObject = User ? JSON.parse(User) : null; // Safely parse the JSON string
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -24,89 +31,39 @@ const Userlist = () => {
             placeholder="Search users..."
             type="search"
           />
-          <Button size="sm">Create User</Button>
+          <Createuser />
         </div>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Flatno</TableHead>
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            <TableRow>
-              <TableCell>jdoe</TableCell>
-              <TableCell>jdoe@example.com</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>janedoe</TableCell>
-              <TableCell>janedoe@example.com</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>johndoe</TableCell>
-              <TableCell>johndoe@example.com</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>sarahjones</TableCell>
-              <TableCell>sarahjones@example.com</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-            <TableRow>
-              <TableCell>mikesmith</TableCell>
-              <TableCell>mikesmith@example.com</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Button size="sm" variant="outline">
-                    Deactivate
-                  </Button>
-                  <Button size="sm" variant="destructive">
-                    Delete
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
+            {userlist.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell>{user.Flatno}</TableCell>
+                <TableCell>{user.username}</TableCell>
+                <TableCell>{user.Email}</TableCell>
+                <TableCell>
+                  {userObject.isAdmin && (
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline">
+                        Deactivate
+                      </Button>
+                      <Button size="sm" variant="destructive">
+                        Delete
+                      </Button>
+                    </div>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
           </TableBody>
         </Table>
       </div>

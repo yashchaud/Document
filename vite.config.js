@@ -20,6 +20,9 @@ export default defineConfig({
     },
     react(),
   ],
+  define: {
+    "process.env": {},
+  },
   optimizeDeps: {
     force: true,
     esbuildOptions: {

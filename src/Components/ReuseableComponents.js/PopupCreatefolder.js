@@ -11,27 +11,31 @@ import {
 } from "@com/ui/dialog";
 import { Input } from "@com/ui/input";
 import { Label } from "@com/ui/label";
-import { storage } from "../Firebase"; // Import your Firebase storage reference
+import { storage } from "../../Firebase"; // Import your Firebase storage reference
 import { ref, uploadBytes, listAll, getDownloadURL } from "firebase/storage";
-import { useParams } from "react-router-dom";
-const Popup = () => {
-  const [selectedFile, setSelectedFile] = useState(null);
+import { useSelector } from "react-redux";
+import cookies from "js-cookies";
 
-  const handleFileChange = (event) => {
-    const file = event.target.files[0];
-    setSelectedFile(file);
-  };
-  const { documentId } = useParams();
-
+const PopupCreatefolder = () => {
+  const [file, setFile] = useState(null);
+  const [folderName, setFolderName] = useState("");
+  const User = cookies.getItem("user");
+  console.log(User);
   const uploadFile = async () => {
-    if (!selectedFile || !documentId) {
+    if (!file || !folderName) {
       alert("Please select a file and enter a folder name.");
       return;
     }
-    const fileRef = ref(storage, `${documentId}/${selectedFile.name}`);
-
+    const fileRef = ref(storage, `${folderName}/${file.name}`);
+    console.log(User);
+    const metadata = {
+      customMetadata: {
+        username: User.username,
+        createdAt: Date.now(),
+      },
+    };
     try {
-      await uploadBytes(fileRef, selectedFile);
+      await uploadBytes(fileRef, file, metadata);
       alert("File uploaded successfully!");
     } catch (error) {
       console.error("Upload failed", error);
@@ -42,43 +46,40 @@ const Popup = () => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button>Create New Document</Button>
+        <Button>Create Folder</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create New Document</DialogTitle>
-          <DialogDescription>
-            Please Choose a title and the pdf file to associate with it.
-          </DialogDescription>
+          <DialogTitle>Create Folder</DialogTitle>
+          <DialogDescription>Name your folder</DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              Title.
+              Name
             </Label>
             <Input
-              id="Flatno"
-              placeholder="Legal Document"
+              id="name"
+              defaultValue="Pedro Duarte"
               className="col-span-3"
+              onChange={(e) => setFolderName(e.target.value)}
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right">
-              PDF
+              Pdf_file
             </Label>
             <Input
-              id="PDF"
+              id="name"
+              className="col-span-3"
               type="file"
-              accept="application/pdf, application/vnd.ms-excel"
-              className="w-24"
-              onChange={handleFileChange}
+              onChange={(e) => setFile(e.target.files[0])}
             />
-            {selectedFile && <span>{selectedFile.name}</span>}
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={uploadFile} type="submit">
-            Create New Document
+          <Button onClick={() => uploadFile()} type="button">
+            Create Folder
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -86,4 +87,4 @@ const Popup = () => {
   );
 };
 
-export default Popup;
+export default PopupCreatefolder;

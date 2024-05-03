@@ -1,28 +1,40 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@com/ui/button";
 import Svg from "../../images/folder.png";
+import PopupCreatefolder from "./PopupCreatefolder";
+import { ref, listAll } from "firebase/storage";
+import { storage } from "../../Firebase";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 const Folderdiv = ({ setOpen }) => {
-  console.log(setOpen);
+  const [folders, setFolders] = useState([]);
+  const Navigate = useNavigate();
+  const User = Cookies.get("user"); // Make sure to use get method correctly
+  const userObject = User ? JSON.parse(User) : null; // Safely parse the JSON string
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const listRef = ref(storage, ""); // pointing to the root of your storage
+        const res = await listAll(listRef);
+        const folderNames = res.prefixes.map((folderRef) => folderRef.name);
+        setFolders(folderNames);
+      } catch (error) {
+        console.error("Failed to fetch folders:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFolders();
+  }, [storage]);
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Folders</h1>
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => {
-              console.log("Back button clicked");
-
-              setOpen(false);
-            }}
-            variant="outline"
-          >
-            <ArrowLeftIcon
-              onClick={() => setOpen(false)}
-              className="h-4 w-4 mr-2"
-            />
-            Back
-          </Button>
-          <Button>View Products</Button>
+          {userObject.isAdmin && <PopupCreatefolder />}
         </div>{" "}
       </div>
       <div className="overflow-x-auto">
@@ -43,98 +55,36 @@ const Folderdiv = ({ setOpen }) => {
             </tr>
           </thead>
           <tbody>
-            <tr className="border-b border-muted/40 dark:border-gray-800/40">
-              <td className="px-4 py-3">
-                <img
-                  alt="Product Image"
-                  className="aspect-square rounded-md object-cover"
-                  height={40}
-                  src={Svg}
-                  width={40}
-                />
-              </td>
-              <td className="px-4 py-3 text-sm font-medium">Product Name</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm">
-                <Button
-                  onClick={() => setOpen(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Open
-                </Button>
-              </td>
-            </tr>
-            <tr className="border-b border-muted/40 dark:border-gray-800/40">
-              <td className="px-4 py-3">
-                <img
-                  alt="Product Image"
-                  className="aspect-square rounded-md object-cover"
-                  height={40}
-                  src={Svg}
-                  width={40}
-                />
-              </td>
-              <td className="px-4 py-3 text-sm font-medium">Another Product</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm">
-                <Button
-                  onClick={() => setOpen(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Open
-                </Button>
-              </td>
-            </tr>
-            <tr className="border-b border-muted/40 dark:border-gray-800/40">
-              <td className="px-4 py-3">
-                <img
-                  alt="Product Image"
-                  className="aspect-square rounded-md object-cover"
-                  height={40}
-                  src={Svg}
-                  width={40}
-                />
-              </td>
-              <td className="px-4 py-3 text-sm font-medium">Cool Product</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm">
-                <Button
-                  onClick={() => setOpen(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Open
-                </Button>
-              </td>
-            </tr>
-            <tr className="border-b border-muted/40 dark:border-gray-800/40">
-              <td className="px-4 py-3">
-                <img
-                  alt="Product Image"
-                  className="aspect-square rounded-md object-cover"
-                  height={40}
-                  src={Svg}
-                  width={40}
-                />
-              </td>
-              <td className="px-4 py-3 text-sm font-medium">Awesome Product</td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm text-muted-foreground"></td>
-              <td className="px-4 py-3 text-sm">
-                <Button
-                  onClick={() => setOpen(true)}
-                  size="sm"
-                  variant="outline"
-                >
-                  Open
-                </Button>
-              </td>
-            </tr>
+            {folders.map((folder) => (
+              <tr
+                key={folder}
+                className="border-b border-muted/40 dark:border-gray-800/40"
+              >
+                <td className="px-4 py-3">
+                  <img
+                    alt="Product Image"
+                    className="aspect-square rounded-md object-cover"
+                    height={40}
+                    src={Svg}
+                    width={40}
+                  />
+                </td>
+                <td className="px-4 py-3 text-sm font-medium">{folder}</td>
+                <td className="px-4 py-3 text-sm text-muted-foreground"></td>
+                <td className="px-4 py-3 text-sm text-muted-foreground"></td>
+                <td className="px-4 py-3 text-sm">
+                  <Button
+                    onClick={() => {
+                      Navigate(`/documents/${folder}`);
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Open
+                  </Button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

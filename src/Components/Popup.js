@@ -1,5 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@com/ui/button";
+import {
+  getFirestore,
+  getDocs,
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { app } from "../Firebase";
+import { setUserlist } from "../Redux/sessionSlice";
 import {
   Dialog,
   DialogContent,
@@ -11,24 +21,63 @@ import {
 } from "@com/ui/dialog";
 import { Input } from "@com/ui/input";
 import { Label } from "@com/ui/label";
+import Userlist from "./ReuseableComponents.js/Userlist";
+import { useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 
 const Popup = () => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const [Allusers, Setallusers] = useState([
-    { username: "test", Flatno: "101" },
-    { username: "test", Flatno: "101" },
-    { username: "test", Flatno: "101" },
-    { username: "test", Flatno: "101" },
-  ]);
+  const db = getFirestore(app);
+  const dispatch = useDispatch();
+
+  const [Allusers, Setallusers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const { userlist } = useSelector((state) => state.counterSlice);
+
+  const fetchUsers = async () => {
+    const usersCollection = collection(db, "users");
+    const userSnapshot = await getDocs(usersCollection);
+    const userList = userSnapshot.docs.map((doc) => ({
+      ...doc.data(),
+      id: doc.id, // Store the Firestore document ID
+    }));
+    Setallusers(userList);
+    dispatch(setUserlist(userList));
+    console.log(userList);
+  };
+
+  const handleCreateUser = async (event) => {
+    event.preventDefault();
+    const Flatno = document.getElementById("Flatno").value;
+    const Email = document.getElementById("name").value;
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+
+    try {
+      const docRef = await addDoc(collection(db, "users"), {
+        Flatno,
+        Email,
+        username,
+        password,
+        isAdmin: false,
+      });
+      console.log("Document written with ID: ", docRef.id);
+      await fetchUsers();
+      setOpen(!open);
+      setInputValue("");
+      setFilteredUsers([]);
+    } catch (e) {
+      console.error("Error adding document: ", e);
+    }
+  };
 
   const handleInputChange = (e) => {
     const value = e.target.value;
     setInputValue(value);
     if (value) {
-      const filter = Allusers.filter((user) =>
-        user.username.toLowerCase().includes(value.toLowerCase())
+      const filter = userlist.filter((user) =>
+        user.Email.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredUsers(filter);
     } else {
@@ -39,6 +88,32 @@ const Popup = () => {
   const handleSelectUser = (username) => {
     setInputValue(username);
     setFilteredUsers([]);
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleDeleteUser = async () => {
+    try {
+      if (inputValue) {
+        const userToDelete = userlist.find(
+          (user) => user.Email.toLowerCase() === inputValue.toLowerCase()
+        );
+        if (userToDelete && userToDelete.id) {
+          await deleteDoc(doc(db, "users", userToDelete.id));
+          console.log("Document deleted with ID: ", userToDelete.id);
+          await fetchUsers(); // Refresh list after deletion
+          setOpen(!open);
+          setInputValue("");
+          setFilteredUsers([]);
+        } else {
+          console.error("No user found with the provided email!");
+        }
+      }
+    } catch (e) {
+      console.error("Error deleting document: ", e);
+    }
   };
 
   return (
@@ -53,8 +128,8 @@ const Popup = () => {
           </DialogTitle>
           <DialogDescription>
             {open
-              ? "Enter the Username of the User you want to Delete"
-              : "Please Enter Flatno, Username, Password to Create the user"}
+              ? "Enter the Email of the User you want to Delete"
+              : "Please Enter Flatno, Email, Password to Create the user"}
           </DialogDescription>
         </DialogHeader>
         {!open && (
@@ -67,16 +142,26 @@ const Popup = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="name" className="text-right">
-                Username
+                Email
               </Label>
               <Input id="name" placeholder="My-user" className="col-span-3" />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Username
+              </Label>
+              <Input
+                id="username"
+                placeholder="My-user"
+                className="col-span-3"
+              />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="username" className="text-right">
                 Password
               </Label>
               <Input
-                id="username"
+                id="password"
                 placeholder="123456"
                 className="col-span-3"
               />
@@ -103,9 +188,9 @@ const Popup = () => {
                     <li
                       key={index}
                       className="p-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => handleSelectUser(user.username)}
+                      onClick={() => handleSelectUser(user.Email)}
                     >
-                      {user.username} - Flat {user.Flatno}
+                      {user.Email} - Flat {user.Flatno}
                     </li>
                   ))}
                 </ul>
@@ -117,15 +202,23 @@ const Popup = () => {
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="destructive"
-              onClick={() => setOpen(!open)}
+              onClick={() => {
+                setOpen(!open);
+                setInputValue(""); // Reset input value when toggling states
+                setFilteredUsers([]); // Clear any filtered results
+              }}
               type="button"
             >
               {open ? "Cancel" : "Delete User"}
             </Button>
             {open ? (
-              <Button type="submit">Delete User</Button>
+              <Button onClick={handleDeleteUser} type="submit">
+                Delete User
+              </Button>
             ) : (
-              <Button type="submit">Create User</Button>
+              <Button type="submit" onClick={handleCreateUser}>
+                Create User
+              </Button>
             )}
           </div>
         </DialogFooter>

@@ -10,6 +10,7 @@ import {
   useLocation,
   Link,
 } from "react-router-dom";
+import Login from "./Components/Login";
 
 function App() {
   return (
@@ -17,7 +18,10 @@ function App() {
       <GlobalStyle />
       <Routes>
         <Route path="/" element={<Document />} />
+        <Route path="/documents" element={<Document />} />
         <Route path="/users" element={<Document />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/documents/:documentId" element={<Document />} />
         {/* <Document /> */}
       </Routes>
     </>

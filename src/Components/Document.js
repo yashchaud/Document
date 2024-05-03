@@ -11,7 +11,7 @@ import NavComponent from "./ReuseableComponents.js/Nav";
 // import Link from "next/link";
 import FOlderdiv from "./ReuseableComponents.js/Folderdiv";
 import { Link } from "react-router-dom";
-import { useLocation } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { Badge } from "@com/ui/badge";
 import {
   CardTitle,
@@ -33,6 +33,7 @@ import {
 
 const Document = () => {
   let location = useLocation();
+  let { documentId } = useParams(); // This will be used to get dynamic segments from the URL
 
   const [Documents, SetDocuments] = useState([
     { name: "Legal Documents", id: 1 },
@@ -44,6 +45,19 @@ const Document = () => {
   const [open, setOpen] = useState(false);
   const [query, SetQuery] = useState("");
 
+  const renderContent = () => {
+    if (
+      location.pathname.startsWith(`/documents/${documentId}`) &&
+      documentId
+    ) {
+      return <PDFdiv setOpen={setOpen} documentId={documentId} />;
+    } else if (location.pathname === "/documents") {
+      return <FOlderdiv setOpen={setOpen} />;
+    } else {
+      // Default case if no other routes match
+      return <div>Not Found</div>;
+    }
+  };
   const handleQueryChange = (event) => {
     SetQuery(event.target.value);
   };
@@ -94,12 +108,12 @@ const Document = () => {
                     to="/"
                   >
                     <Package2Icon className="h-6 w-6" />
-                    <span className="sr-only">Acme Inc</span>
+                    <span className="sr-only">Sanmisha</span>
                   </Link>
 
                   <Link
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl bg-muted px-3 py-2 text-foreground hover:text-foreground"
-                    to="/"
+                    to="/documents"
                   >
                     <ShoppingCartIcon className="h-5 w-5" />
                     Documents
@@ -156,13 +170,7 @@ const Document = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           </header>
-          {location.pathname === "/users" ? (
-            <Userlist />
-          ) : open ? (
-            <PDFdiv setOpen={setOpen} />
-          ) : (
-            <FOlderdiv setOpen={setOpen} />
-          )}
+          {location.pathname === "/users" ? <Userlist /> : renderContent()}
         </div>
       </div>
     </>
@@ -170,6 +178,7 @@ const Document = () => {
 };
 
 export default Document;
+
 const Triggersheet = styled.div`
   margin-top: 1rem;
 `;
