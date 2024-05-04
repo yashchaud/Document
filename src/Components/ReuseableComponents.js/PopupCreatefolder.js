@@ -11,35 +11,42 @@ import {
 } from "@com/ui/dialog";
 import { Input } from "@com/ui/input";
 import { Label } from "@com/ui/label";
-import { storage } from "../../Firebase"; // Import your Firebase storage reference
-import { ref, uploadBytes, listAll, getDownloadURL } from "firebase/storage";
-import { useSelector } from "react-redux";
+import { ref, uploadBytes } from "firebase/storage";
+import { storage } from "../../Firebase"; // Ensure you have imported storage
 import cookies from "js-cookies";
 
 const PopupCreatefolder = () => {
-  const [file, setFile] = useState(null);
   const [folderName, setFolderName] = useState("");
+  const [isError, setIsError] = useState(false);
   const User = cookies.getItem("user");
-  console.log(User);
-  const uploadFile = async () => {
-    if (!file || !folderName) {
-      alert("Please select a file and enter a folder name.");
+  const user = User ? JSON.parse(User) : null; // Safely parse the JSON string
+
+  const createFolderInStorage = async () => {
+    if (!folderName.trim()) {
+      alert("Please enter a valid folder name.");
       return;
     }
-    const fileRef = ref(storage, `${folderName}/${file.name}`);
-    console.log(User);
-    const metadata = {
-      customMetadata: {
-        username: User.username,
-        createdAt: Date.now(),
-      },
-    };
+    const folderPath = `${folderName}/placeholder.txt`; // Creating a placeholder file
+    const folderRef = ref(storage, folderPath);
+
     try {
-      await uploadBytes(fileRef, file, metadata);
-      alert("File uploaded successfully!");
+      // Upload a tiny placeholder to simulate folder creation
+      await uploadBytes(folderRef, new Blob(["Folder placeholder"]));
+      alert("Folder created successfully in Firebase Storage.");
+      window.location.reload();
     } catch (error) {
-      console.error("Upload failed", error);
-      alert("Upload failed");
+      console.error("Firebase Storage operation failed", error);
+      alert("Creation failed: " + error.message);
+    }
+  };
+
+  const handleFolderNameChange = (e) => {
+    const input = e.target.value;
+    if (input.includes(" ")) {
+      setIsError(true);
+    } else {
+      setIsError(false);
+      setFolderName(input);
     }
   };
 
@@ -50,35 +57,31 @@ const PopupCreatefolder = () => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Folder</DialogTitle>
-          <DialogDescription>Name your folder</DialogDescription>
+          <DialogTitle>Create New Folder in Storage</DialogTitle>
+          <DialogDescription>
+            Enter folder name (no spaces allowed)
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
+            <Label htmlFor="folderName" className="text-right">
+              Folder Name
             </Label>
             <Input
-              id="name"
-              defaultValue="Pedro Duarte"
+              id="folderName"
+              placeholder="Enter folder name"
               className="col-span-3"
-              onChange={(e) => setFolderName(e.target.value)}
+              onChange={handleFolderNameChange}
             />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Pdf_file
-            </Label>
-            <Input
-              id="name"
-              className="col-span-3"
-              type="file"
-              onChange={(e) => setFile(e.target.files[0])}
-            />
+            {isError && (
+              <span className="col-span-4 text-red-500 text-sm">
+                * Spaces are not allowed in folder name
+              </span>
+            )}
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={() => uploadFile()} type="button">
+          <Button onClick={createFolderInStorage} type="button">
             Create Folder
           </Button>
         </DialogFooter>

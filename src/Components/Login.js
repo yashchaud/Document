@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import { Button } from "@com/ui/button";
 import styled from "styled-components";
 import { auth } from "../Firebase";
-import { app } from "../Firebase"; // Assume db is your Firestore instance
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { getFirestore, addDoc, deleteDoc, doc } from "firebase/firestore";
 import {
   Card,
   CardContent,
@@ -15,75 +12,73 @@ import {
 } from "@com/ui/card";
 import { Input } from "@com/ui/input";
 import { Label } from "@com/ui/label";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { app } from "../Firebase"; // Assume db is your Firestore instance
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
+import {
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+} from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-
 import Cookies from "js-cookie";
+
 const Login = () => {
-  const [email, setemail] = useState("");
-  const [password, setpassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const navigate = useNavigate();
   const db = getFirestore(app);
 
   const handlesignin = async () => {
     signInWithEmailAndPassword(auth, email, password)
-      .then((userCredential) => {
+      .then(async (userCredential) => {
         // Signed in
         const user = userCredential.user;
         console.log(user);
-        Cookies.set(
-          "user",
-          JSON.stringify({
-            email: user.email,
-            uid: user.uid,
-            isAdmin: true,
-          }),
-          { expires: 1 }
-        ); // Expires in 7 days
-        navigate("/users");
+        const usersRef = collection(db, "users"); // Adjust "users" to your collection name
+        const q = query(usersRef, where("email", "==", user.email));
+        try {
+          const querySnapshot = await getDocs(q);
+          querySnapshot.forEach((doc) => {
+            Cookies.set(
+              "user",
+              JSON.stringify({
+                email: doc.data().email,
+                Flatno: doc.data().Flatno,
+                Role: doc.data().Role,
+                uid: doc.id,
+              }),
+              { expires: 7 }
+            );
+            navigate("/documents");
+          });
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+          alert("Failed to fetch user data");
+        }
       })
       .catch((error) => {
         const errorCode = error.code;
         const errorMessage = error.message;
         console.log(errorCode, errorMessage);
+        alert(errorMessage);
       });
   };
-  const handleUserlogin = async () => {
-    const usersRef = collection(db, "users"); // Adjust "users" to your collection name
-    const q = query(usersRef, where("Email", "==", email));
-    console.log(q);
 
-    try {
-      const querySnapshot = await getDocs(q);
-      let userFound = false;
-      querySnapshot.forEach((doc) => {
-        // Assuming 'password' is stored in the document (not recommended)
-        if (doc.data().password === password) {
-          userFound = true;
-          // Handle successful login here
-          console.log(doc.data());
-          Cookies.set(
-            "user",
-            JSON.stringify({
-              email: doc.data().Email,
-              Flatno: doc.data().Flatno,
-              username: doc.data().username,
-              isAdmin: doc.data().isAdmin,
-              uid: doc.id,
-            }),
-            { expires: 7 }
-          );
-          navigate("/users"); // Adjust as necessary
-        }
-      });
-      if (!userFound) {
-        alert("No matching user found or password incorrect.");
-      }
-    } catch (error) {
-      console.error("Login error:", error);
-      alert("Failed to login");
+  const handlePasswordReset = () => {
+    if (email) {
+      sendPasswordResetEmail(auth, email)
+        .then(() => {
+          alert("Password reset email sent. Please check your inbox.");
+        })
+        .catch((error) => {
+          console.error("Error sending password reset email:", error);
+          alert("Failed to send password reset email.");
+        });
+    } else {
+      alert("Please enter your email first.");
     }
   };
+
   return (
     <Cover>
       <Card className="w-full max-w-sm">
@@ -101,7 +96,7 @@ const Login = () => {
               type="email"
               placeholder="m@example.com"
               required
-              onChange={(e) => setemail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="grid gap-2">
@@ -109,17 +104,18 @@ const Login = () => {
             <Input
               id="password"
               type="password"
+              placeholder="Password"
               required
-              onChange={(e) => setpassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
         </CardContent>
         <CardFooter style={{ gap: "1rem" }}>
           <Button onClick={handlesignin} className="w-full">
-            Adminlogin
+            Login
           </Button>
-          <Button onClick={handleUserlogin} className="w-full">
-            Userlogin
+          <Button onClick={handlePasswordReset} className="w-full">
+            Forgot Password?
           </Button>
         </CardFooter>
       </Card>

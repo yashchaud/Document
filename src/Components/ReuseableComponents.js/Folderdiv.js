@@ -2,12 +2,16 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@com/ui/button";
 import Svg from "../../images/folder.png";
 import PopupCreatefolder from "./PopupCreatefolder";
-import { ref, listAll } from "firebase/storage";
-import { storage } from "../../Firebase";
+import { ref, listAll, uploadBytes, getDownloadURL } from "firebase/storage";
+import { addDoc, collection } from "firebase/firestore";
+import { storage, firestore } from "../../Firebase";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
-const Folderdiv = ({ setOpen }) => {
+
+const Folderdiv = ({ setOpen, query }) => {
   const [folders, setFolders] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const Navigate = useNavigate();
   const User = Cookies.get("user"); // Make sure to use get method correctly
   const userObject = User ? JSON.parse(User) : null; // Safely parse the JSON string
@@ -15,12 +19,15 @@ const Folderdiv = ({ setOpen }) => {
   useEffect(() => {
     const fetchFolders = async () => {
       try {
-        const listRef = ref(storage, ""); // pointing to the root of your storage
+        const listRef = ref(storage, "");
         const res = await listAll(listRef);
         const folderNames = res.prefixes.map((folderRef) => folderRef.name);
+        console.log(folderNames);
+
         setFolders(folderNames);
       } catch (error) {
         console.error("Failed to fetch folders:", error);
+        setError("Failed to fetch folders");
       } finally {
         setLoading(false);
       }
@@ -34,7 +41,8 @@ const Folderdiv = ({ setOpen }) => {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold md:text-2xl">Folders</h1>
         <div className="flex items-center gap-2">
-          {userObject.isAdmin && <PopupCreatefolder />}
+          {userObject.Role == "admin" && <PopupCreatefolder />}
+          {userObject.Role == "coadmin" && <PopupCreatefolder />}
         </div>{" "}
       </div>
       <div className="overflow-x-auto">
@@ -75,6 +83,7 @@ const Folderdiv = ({ setOpen }) => {
                 <td className="px-4 py-3 text-sm">
                   <Button
                     onClick={() => {
+                      console.log(folder);
                       Navigate(`/documents/${folder}`);
                     }}
                     size="sm"

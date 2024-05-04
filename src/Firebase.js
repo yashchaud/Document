@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getStorage } from "firebase/storage"; // Importing the storage service
+import { getAuth, deleteUser, updateProfile } from "firebase/auth";
+import { getStorage } from "firebase/storage";
+import { getFirestore } from "firebase/firestore"; // Importing the Firestore service
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -10,10 +11,12 @@ const firebaseConfig = {
   storageBucket: import.meta.env.VITE_STORAGEBUCKET,
   messagingSenderId: import.meta.env.VITE_MESSAGINGSENDERID,
   appId: import.meta.env.VITE_APPID,
-  measurementId: import.meta.env.VITE_MESUREMENT,
+  measurementId: import.meta.env.VITE_MEASUREMENT, // Corrected possible typo from MESUREMENT to MEASUREMENT
 };
 
 // Initialize Firebase
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const storage = getStorage(app); // Initialize the storage with your Firebase app
+export const storage = getStorage(app);
+export const firestore = getFirestore(app); // Initialize Firestore with your Firebase app
+export { deleteUser, updateProfile };

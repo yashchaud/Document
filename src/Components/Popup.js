@@ -9,6 +9,8 @@ import {
   doc,
 } from "firebase/firestore";
 import { app } from "../Firebase";
+import Roleselect from "./ReuseableComponents.js/SelectComponent";
+
 import { setUserlist } from "../Redux/sessionSlice";
 import {
   Dialog,
@@ -24,10 +26,14 @@ import { Label } from "@com/ui/label";
 import Userlist from "./ReuseableComponents.js/Userlist";
 import { useDispatch } from "react-redux";
 import { useSelector } from "react-redux";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../Firebase";
 
 const Popup = () => {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const [selectedRole, setSelectedRole] = useState(""); // State to store selected role
+
   const db = getFirestore(app);
   const dispatch = useDispatch();
 
@@ -50,25 +56,31 @@ const Popup = () => {
   const handleCreateUser = async (event) => {
     event.preventDefault();
     const Flatno = document.getElementById("Flatno").value;
-    const Email = document.getElementById("name").value;
-    const username = document.getElementById("username").value;
+    const email = document.getElementById("name").value;
     const password = document.getElementById("password").value;
 
     try {
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+      const user = userCredential.user;
+      console.log("Firebase Authentication user created:", user);
+
       const docRef = await addDoc(collection(db, "users"), {
         Flatno,
-        Email,
-        username,
-        password,
-        isAdmin: false,
+        email,
+        Role: selectedRole,
       });
-      console.log("Document written with ID: ", docRef.id);
+      console.log("Firestore document written with ID:", docRef.id);
+
       await fetchUsers();
       setOpen(!open);
       setInputValue("");
       setFilteredUsers([]);
     } catch (e) {
-      console.error("Error adding document: ", e);
+      console.error("Error creating user:", e);
     }
   };
 
@@ -77,7 +89,7 @@ const Popup = () => {
     setInputValue(value);
     if (value) {
       const filter = userlist.filter((user) =>
-        user.Email.toLowerCase().includes(value.toLowerCase())
+        user.email.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredUsers(filter);
     } else {
@@ -98,7 +110,7 @@ const Popup = () => {
     try {
       if (inputValue) {
         const userToDelete = userlist.find(
-          (user) => user.Email.toLowerCase() === inputValue.toLowerCase()
+          (user) => user.email.toLowerCase() === inputValue.toLowerCase()
         );
         if (userToDelete && userToDelete.id) {
           await deleteDoc(doc(db, "users", userToDelete.id));
@@ -146,16 +158,7 @@ const Popup = () => {
               </Label>
               <Input id="name" placeholder="My-user" className="col-span-3" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Username
-              </Label>
-              <Input
-                id="username"
-                placeholder="My-user"
-                className="col-span-3"
-              />
-            </div>
+
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="username" className="text-right">
                 Password
@@ -165,6 +168,12 @@ const Popup = () => {
                 placeholder="123456"
                 className="col-span-3"
               />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right">
+                Role
+              </Label>
+              <Roleselect onSelectRole={setSelectedRole} />
             </div>
           </div>
         )}
@@ -188,9 +197,9 @@ const Popup = () => {
                     <li
                       key={index}
                       className="p-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => handleSelectUser(user.Email)}
+                      onClick={() => handleSelectUser(user.email)}
                     >
-                      {user.Email} - Flat {user.Flatno}
+                      {user.email} - Flat {user.Flatno}
                     </li>
                   ))}
                 </ul>

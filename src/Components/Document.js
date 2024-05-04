@@ -13,6 +13,7 @@ import FOlderdiv from "./ReuseableComponents.js/Folderdiv";
 import { Link } from "react-router-dom";
 import { useLocation, useParams } from "react-router-dom";
 import { Badge } from "@com/ui/badge";
+import Logo from "../images/icons8-document-375.png";
 import {
   CardTitle,
   CardDescription,
@@ -22,6 +23,7 @@ import {
 } from "@com/ui/card";
 import Userlist from "./ReuseableComponents.js/Userlist";
 import { SheetTrigger, SheetContent, Sheet } from "@com/ui/sheet";
+import LogoutPrompt from "./ReuseableComponents.js/LogoutPrompt";
 import {
   DropdownMenuTrigger,
   DropdownMenuLabel,
@@ -30,29 +32,30 @@ import {
   DropdownMenuContent,
   DropdownMenu,
 } from "@com/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const Document = () => {
   let location = useLocation();
   let { documentId } = useParams(); // This will be used to get dynamic segments from the URL
 
-  const [Documents, SetDocuments] = useState([
-    { name: "Legal Documents", id: 1 },
-    { name: "Registration", id: 2 },
-    { name: "Employee data", id: 3 },
-    { name: "MassegesData", id: 4 },
-  ]);
   const [CurrentWidth, SetCurrentwidth] = useState(window.innerWidth);
   const [open, setOpen] = useState(false);
   const [query, SetQuery] = useState("");
+  const [logout, setlogout] = useState(false);
+  const User = Cookies.get("user"); // Make sure to use get method correctly
+  const user = User ? JSON.parse(User) : null; // Safely parse the JSON string
+
+  const Navigate = useNavigate();
 
   const renderContent = () => {
     if (
       location.pathname.startsWith(`/documents/${documentId}`) &&
       documentId
     ) {
-      return <PDFdiv setOpen={setOpen} documentId={documentId} />;
+      return <PDFdiv query={query} setOpen={setOpen} documentId={documentId} />;
     } else if (location.pathname === "/documents") {
-      return <FOlderdiv setOpen={setOpen} />;
+      return <FOlderdiv query={query} setOpen={setOpen} />;
     } else {
       // Default case if no other routes match
       return <div>Not Found</div>;
@@ -74,15 +77,20 @@ const Document = () => {
     };
   }, [CurrentWidth]);
 
+  const handleLogout = () => {
+    setlogout(true);
+  };
+
   return (
     <>
+      {logout && <LogoutPrompt setlogout={setlogout} logout={logout} />}
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         <div className="hidden border-r bg-muted/40 md:block">
           <div className="flex h-full max-h-screen flex-col gap-2">
             <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
               <a className="flex items-center gap-2 font-semibold" href="#">
-                <Package2Icon className="h-6 w-6" />
-                <span className="">Sanmisha</span>
+                <img style={{ width: "40px" }} src={Logo} alt="" />
+                <span className="">DocVault</span>
               </a>
             </div>
             <NavComponent />
@@ -103,12 +111,9 @@ const Document = () => {
               </SheetTrigger>
               <SheetContent className="flex flex-col" side="left">
                 <nav className="grid gap-2 text-lg font-medium">
-                  <Link
-                    className="flex items-center gap-2 text-lg font-semibold"
-                    to="/"
-                  >
-                    <Package2Icon className="h-6 w-6" />
-                    <span className="sr-only">Sanmisha</span>
+                  <Link className="flex items-center gap-2 mb-3 text-lg font-semibold">
+                    <img style={{ width: "40px" }} src={Logo} alt="" />
+                    <p>DocVault</p>
                   </Link>
 
                   <Link
@@ -121,7 +126,7 @@ const Document = () => {
 
                   <Link
                     className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                    to="users"
+                    to="/users"
                   >
                     <UsersIcon className="h-5 w-5" />
                     Users
@@ -132,23 +137,30 @@ const Document = () => {
             <div className="w-full flex-1">
               <form>
                 <div className="relative">
-                  <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  {open ? (
+                  {location.pathname !== "/users" && (
+                    <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  )}{" "}
+                  {open && location.pathname !== "/users" ? (
                     <Input
                       className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
                       placeholder="Search Documents..."
                       type="search"
+                      onChange={handleQueryChange}
                     />
                   ) : (
-                    <Input
-                      className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
-                      placeholder="Search Folders..."
-                      type="search"
-                    />
+                    location.pathname !== "/users" && (
+                      <Input
+                        className="w-full appearance-none bg-background pl-8 shadow-none md:w-2/3 lg:w-1/3"
+                        placeholder="Search Folders..."
+                        type="search"
+                        onChange={handleQueryChange}
+                      />
+                    )
                   )}
                 </div>
               </form>
             </div>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -163,10 +175,12 @@ const Document = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>My Account</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Support</DropdownMenuItem>
+                <DropdownMenuItem>{user.email}</DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Logout</DropdownMenuItem>
+
+                <DropdownMenuItem onClick={handleLogout}>
+                  Logout
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </header>

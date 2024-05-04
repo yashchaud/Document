@@ -6,14 +6,22 @@ import { ref, listAll, getDownloadURL } from "firebase/storage";
 import CreatingNewDocument from "../CreatingNewDocument";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { getFirestore } from "firebase/firestore";
 
-const PDFdiv = ({ setOpen, documentId }) => {
+import { app } from "../../Firebase"; // Ensure Firestore is properly imported
+import {
+  collection,
+  getDocs,
+  query as firestoreQuery,
+  where,
+} from "firebase/firestore";
+
+const PDFdiv = ({ setOpen, query, documentId }) => {
   const [files, setFiles] = useState([]);
-  const [currentFile, setCurrentFile] = useState(null);
-
   const Navigate = useNavigate();
-  const User = Cookies.get("user"); // Make sure to use get method correctly
-  const userObject = User ? JSON.parse(User) : null; // Safely parse the JSON string
+  const User = Cookies.get("user");
+  const userObject = User ? JSON.parse(User) : null;
+  const db = getFirestore(app);
 
   useEffect(() => {
     console.log(userObject.email);
@@ -21,21 +29,44 @@ const PDFdiv = ({ setOpen, documentId }) => {
 
   useEffect(() => {
     const fetchFiles = async () => {
-      const folderRef = ref(storage, documentId); // documentId is the folder name
+      const folderRef = ref(storage, documentId);
       try {
         const fileList = await listAll(folderRef);
+        // Filter the files to include only PDFs
+        const pdfFiles = fileList.items.filter((fileRef) =>
+          fileRef.name.endsWith(".pdf")
+        );
+
         const fileUrls = await Promise.all(
-          fileList.items.map((fileRef) => getDownloadURL(fileRef))
+          pdfFiles.map((fileRef) => getDownloadURL(fileRef))
         );
-        console.log(fileUrls);
-        setFiles(
-          fileUrls.map((url, index) => ({
-            url,
-            name: fileList.items[index].name, // Optional: Capture the file name if needed
-          }))
+
+        const filesMetadataQuery = firestoreQuery(
+          collection(db, "files"),
+          where("folderName", "==", documentId)
         );
+        const filesMetadata = await getDocs(filesMetadataQuery);
+        const metadataMap = new Map();
+        filesMetadata.forEach((doc) => {
+          console.log(doc.id, " => ", doc.data()); // Log each document to check the actual data
+          metadataMap.set(doc.data().fileName, {
+            createdBy: doc.data().createdBy,
+            createdAt: doc.data().createdAt,
+            Flatno: doc.data().Flatno,
+          });
+        });
+
+        const filesWithMetadata = pdfFiles.map((item, index) => ({
+          url: fileUrls[index],
+          name: item.name,
+          createdBy: metadataMap.get(item.name)?.createdBy || "Unknown",
+          createdAt: metadataMap.get(item.name)?.createdAt || "Unknown date",
+          Flatno: metadataMap.get(item.name)?.Flatno,
+        }));
+
+        setFiles(filesWithMetadata);
       } catch (error) {
-        console.error("Error fetching files:", error);
+        console.error("Error fetching files and metadata:", error);
       }
     };
 
@@ -43,10 +74,11 @@ const PDFdiv = ({ setOpen, documentId }) => {
       fetchFiles();
     }
   }, [documentId]);
+
   return (
     <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold md:text-2xl">Pdf Documents</h1>
+        <h1 className="text-lg font-semibold md:text-2xl">PDF Documents</h1>
         <div className="flex items-center gap-2">
           <Button
             onClick={() => {
@@ -57,7 +89,10 @@ const PDFdiv = ({ setOpen, documentId }) => {
             <ArrowLeftIcon className="h-4 w-4 mr-2" />
             Back
           </Button>
-          {userObject.isAdmin && <CreatingNewDocument />}
+          {userObject &&
+            (userObject.Role === "admin" || userObject.Role === "coadmin") && (
+              <CreatingNewDocument setOpen={setOpen} />
+            )}
         </div>
       </div>
       <div className="overflow-x-auto">
@@ -66,6 +101,9 @@ const PDFdiv = ({ setOpen, documentId }) => {
             <tr className="bg-muted/40 dark:bg-gray-800/40">
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                 Image
+              </th>
+              <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                Flatno
               </th>
               <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                 Name
@@ -82,31 +120,45 @@ const PDFdiv = ({ setOpen, documentId }) => {
             </tr>
           </thead>
           <tbody>
-            {files.map((file) => (
-              <tr className="border-b border-muted/40 dark:border-gray-800/40">
-                <td className="px-4 py-3">
-                  <img
-                    alt="Product Image"
-                    className="aspect-square rounded-md object-cover"
-                    height={40}
-                    src={Svg}
-                    width={40}
-                  />
-                </td>
-                <td className="px-4 py-3 text-sm font-medium">{file.name}</td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  John Doe
-                </td>
-                <td className="px-4 py-3 text-sm text-muted-foreground">
-                  2023-04-01
-                </td>
-                <td className="px-4 py-3 text-sm">
-                  <Button size="sm" variant="outline">
-                    View PDF
-                  </Button>
-                </td>
-              </tr>
-            ))}
+            {files
+              .filter((file) => file.createdBy.includes(query))
+              .map((file) => (
+                <tr
+                  key={file.name}
+                  className="border-b border-muted/40 dark:border-gray-800/40"
+                >
+                  <td className="px-4 py-3">
+                    <img
+                      alt="PDF Icon"
+                      className="aspect-square rounded-md object-cover"
+                      height={40}
+                      src={Svg}
+                      width={40}
+                    />
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium">
+                    {file.Flatno}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-medium">{file.name}</td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {file.createdBy}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-muted-foreground">
+                    {file.createdAt}
+                  </td>
+                  <td className="px-4 py-3 text-sm">
+                    <a
+                      href={file.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button size="sm" variant="outline">
+                        View PDF
+                      </Button>
+                    </a>
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

@@ -17,7 +17,7 @@ function App() {
     <>
       <GlobalStyle />
       <Routes>
-        <Route path="/" element={<Document />} />
+        <Route path="/" element={<Login />} />
         <Route path="/documents" element={<Document />} />
         <Route path="/users" element={<Document />} />
         <Route path="/login" element={<Login />} />
